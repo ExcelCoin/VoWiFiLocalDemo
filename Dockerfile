@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM ubuntu:impish
 RUN apt update && apt install -y \
+baresip-core \
 kamailio \
 openssh-server \
 strongswan \
