@@ -2,6 +2,7 @@
 FROM ubuntu:impish
 RUN apt update && apt install -y \
 kamailio \
+openssh-server \
 strongswan \
 && rm -rf /var/lib/apt/lists/*
 

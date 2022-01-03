@@ -5,6 +5,7 @@ services:
     ports:
       - "500:500/udp"
       - "4500:4500/udp"
+      - "127.0.0.1:22222:22"
     cap_add:
       - NET_ADMIN
     # https://github.com/dperson/openvpn-client/issues/75#issuecomment-326843622
