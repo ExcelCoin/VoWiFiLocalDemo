@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  main:
+    build: .
+    ports:
+      - "500:500/udp"
+      - "4500:4500/udp"
+    cap_add:
+      - NET_ADMIN
+    # https://github.com/dperson/openvpn-client/issues/75#issuecomment-326843622
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+    stdin_open: true
+    tty: true
