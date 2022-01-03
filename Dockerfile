@@ -5,6 +5,9 @@ kamailio \
 strongswan \
 && rm -rf /var/lib/apt/lists/*
 
+COPY app app
+RUN /app/install.sh
+
 # TODO(zhuowei): deploy the configs
 
 ENTRYPOINT ["/app/start.sh"]
