@@ -5,6 +5,7 @@ baresip-core \
 kamailio \
 openssh-server \
 strongswan \
+tcpdump \
 && rm -rf /var/lib/apt/lists/*
 
 COPY app app
