@@ -90,18 +90,13 @@ def sendsip(smsdata, sipaddr):
 
 def main():
     if len(sys.argv) != 4:
-        print("usage: encodesms <from|emerg> <to|emu> <text>")
+        print("usage: encodesms <from> <to|emu> <text>")
         print("e.g. encodesms 15556667777 13334445555 \"hello\"")
-        print("send from emerg for a cell broadcast emergency warning")
         print(
             "send to emu for a hex dump to pass into Android Emulator's sms pdu command"
         )
         return
-    mode = "sms"
     fromaddr = sys.argv[1]
-    if fromaddr == "emerg":
-        print("not implemented")
-        return
     fromnum = int(fromaddr)
     tonum = sys.argv[2]
     text = sys.argv[3]
