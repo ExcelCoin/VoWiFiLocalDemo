@@ -2,6 +2,7 @@
 import sys
 import datetime
 import socket
+import time
 
 
 # Yes, I know there are about a thousand SIM libraries, but I wanted to build one
@@ -78,7 +79,7 @@ def sendsip(smsdata, sipaddr):
     "Via: SIP/2.0/UDP [::1];branch=0\r\n" + \
     "From: <sip:+15555555555@localhost>\r\n" + \
     "To: <" + sipaddr + ">\r\n" + \
-    "Call-Id: 0\r\n" + \
+    "Call-Id: " + str(time.time_ns()) + "\r\n" + \
     "CSeq: 1 MESSAGE\r\n" + \
     "Content-Length: " + str(len(smsdata)) + "\r\n" + \
     "Content-Type: application/vnd.3gpp.sms\r\n\r\n"
