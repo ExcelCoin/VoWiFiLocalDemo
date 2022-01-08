@@ -53,7 +53,7 @@ def encodesim(fromnum, text, timestamp):
         datebcd(ts.minute),
         datebcd(ts.second),
         datebcd(0),  #utc
-        len(textencoded),
+        len(text),
     ]) + textencoded
     return outbytes
 
