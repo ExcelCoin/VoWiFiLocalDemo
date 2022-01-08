@@ -12,3 +12,4 @@ echo "/quit" | baresip -f /root/.baresip || true
 echo "module amr.so" >> /root/.baresip/config
 # setup sim
 ln -s /app/encodesms.py /usr/local/bin/encodesms
+ln -s /app/encodesms_cdma.py /usr/local/bin/encodesms_cdma

@@ -3,6 +3,7 @@
 import sys
 import datetime
 import socket
+import time
 
 # it's like encodesms.py but CDMA! :D
 # https://www.3gpp2.org/Public_html/Specs/X.S0048-0_v1.0_071111.pdf
@@ -46,18 +47,21 @@ def datebcd(a):
     return ((a // 10) << 4) | (a % 10)
 
 
-def encodesms(fromnum, text, timestamp):
+def encode_bearer(text, timestamp, message_id=0):
     text_encoded = gsmencode(text)
     # GSM 7-bit encoding. (ok I'm lying I don't have a GSM 7-bit encoder, so I should use ASCII-7 (00010), but who cares)
-    text_encoded_bitstr = "01001" + bin(len(text_encoded) |
+    text_encoded_bitstr = "01001" + bin(len(text) |
                                         0x100)[3:] + bitascii(text_encoded)
     user_data_bytes = bitstrtobytes(bitpad8(text_encoded_bitstr))
     ts = timestamp.astimezone(datetime.timezone.utc)
     bearer_data = bytes([
         0x00,  # SUBPARAMETER_ID = Message Identifier
         0x03,  # SUBPARAMETER_LEN
-        0b00010000,  # MESSAGE_TYPE = 0001 (Deliver), MESSAGE_ID = 0x0000
-        0b00000000,
+        0b00010000 |
+        (message_id >>
+         12),  # MESSAGE_TYPE = 0001 (Deliver), MESSAGE_ID = message id
+        (message_id >> 4) & 0xff,
+        (message_id & 0xf) |
         0b00000000,  # HEADER_IND = 0 (user data has no header)
         0x01,  # SUBPARAMETER_ID = User Data
         len(user_data_bytes),  # SUBPARAMETER_LEN
@@ -71,7 +75,11 @@ def encodesms(fromnum, text, timestamp):
         datebcd(ts.minute),
         datebcd(ts.second),
     ])
+    return bearer_data
 
+
+def encodesms(fromnum, text, timestamp):
+    bearer_data = encode_bearer(text, timestamp)
     fromnumbytes = fromnum.encode("ascii")
     # DIGIT_MODE = 1 (8-bit ASCII), NUMBER_MODE = 0 (phone number), NUMBER_TYPE = 001 (international number), NUMBER_PLAN = 0001 (telephone)
     frombitstr = "100010001" + bin(len(fromnumbytes) |
@@ -95,12 +103,29 @@ def encodesms(fromnum, text, timestamp):
     return outbytes
 
 
+def encode_emergency(text, timestamp):
+    message_id = int(time.time()) & 0xffff
+    bearer_data = encode_bearer(text, timestamp, message_id)
+
+    outbytes = bytes([
+        0x01,  # SMS_MSG_TYPE = Broadcast
+        0x01,  # PARAMETER_ID = Service category
+        0x02,  # PARAMETER_LEN
+        # https://cs.android.com/android/platform/superproject/+/master:frameworks/base/telephony/java/com/android/internal/telephony/cdma/sms/SmsEnvelope.java;l=58;drc=master
+        0x10,  # Extreme threat
+        0x01,
+        0x08,  # PARAMETER_ID = Bearer Data
+        len(bearer_data),  # PARAMETER_LEN
+    ]) + bearer_data
+    return outbytes
+
+
 def sendsip(smsdata, sipaddr):
     headers = "MESSAGE " + sipaddr + " SIP/2.0\r\n" + \
     "Via: SIP/2.0/UDP [::1];branch=0\r\n" + \
     "From: <sip:+15555555555@localhost>\r\n" + \
     "To: <" + sipaddr + ">\r\n" + \
-    "Call-Id: 0\r\n" + \
+    "Call-Id: " + str(time.time_ns()) + "\r\n" + \
     "CSeq: 1 MESSAGE\r\n" + \
     "Content-Length: " + str(len(smsdata)) + "\r\n" + \
     "Content-Type: application/vnd.3gpp2.sms\r\n\r\n"
@@ -112,15 +137,18 @@ def sendsip(smsdata, sipaddr):
 
 def main():
     if len(sys.argv) != 4:
-        print("usage: encodesms <from|emerg> <to|emu> <text>")
-        print("e.g. encodesms 15556667777 13334445555 \"hello\"")
+        print("usage: encodesms_cdma <from|emerg> <to|emu> <text>")
+        print("e.g. encodesms_cdma 15556667777 13334445555 \"hello\"")
         print("send from emerg for a cell broadcast alert")
         print("send to emu for a Java array dump")
         return
     fromaddr = sys.argv[1]
     tonum = sys.argv[2]
     text = sys.argv[3]
-    smsdata = encodesms(fromaddr, text, datetime.datetime.now())
+    if fromaddr == "emerg":
+        smsdata = encode_emergency(text, datetime.datetime.now())
+    else:
+        smsdata = encodesms(fromaddr, text, datetime.datetime.now())
     if tonum == "emu":
         header = bytes([
             0x01,  # RECEIVED_READ
